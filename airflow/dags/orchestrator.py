@@ -37,8 +37,6 @@ with dag:
         mounts=[
             Mount(source=f"{PROJECT_ROOT}/dbt/my_project", target="/usr/app", type="bind"),
             Mount(source=f"{PROJECT_ROOT}/dbt/profiles.yml", target="/root/.dbt/profiles.yml", type="bind"),
-            # Mount(source='/home/kevin/repos/earthquake-data-project/dbt/my_project', target='/usr/app', type='bind'),
-            # Mount(source='/home/kevin/repos/earthquake-data-project/dbt/profiles.yml', target='/root/.dbt/profiles.yml', type='bind'),
         ],
         network_mode='earthquake-data-project_my-network',
         docker_url='unix://var/run/docker.sock',

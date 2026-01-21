@@ -1,0 +1,12 @@
+my_project:
+  outputs:
+    dev:
+      dbname: "{{ env_var('DATABASE_DB') }}"
+      host: "{{ env_var('DATABASE_HOST', 'localhost') }}"
+      pass: "{{ env_var('DATABASE_PASSWORD') }}"
+      port: 5432
+      schema: dev
+      threads: 4
+      type: postgres
+      user: "{{ env_var('DATABASE_USER') }}"
+  target: dev
