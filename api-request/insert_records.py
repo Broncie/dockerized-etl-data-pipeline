@@ -22,58 +22,111 @@ def connect_to_database():
         return
 
 def create_table(connection):
-    print("Creating table if not exists.")
+    print("Preparing Raw Landing Table.")
     try:
         cursor = connection.cursor()
         create_table_query = """
         CREATE SCHEMA IF NOT EXISTS dev;
         CREATE TABLE IF NOT EXISTS dev.raw_earthquake_data (
-            id SERIAL PRIMARY KEY,
+            id TEXT PRIMARY KEY,  -- USGS provides a unique ID string
             magnitude FLOAT,
+            latitude FLOAT,
+            longitude FLOAT,
+            depth FLOAT,
             location TEXT,
-            time TIMESTAMPTZ
+            time TEXT             -- Store as TEXT initially, dbt will cast it
         );
+        TRUNCATE TABLE dev.raw_earthquake_data; -- Keeps the Bronze layer fresh
         """
         cursor.execute(create_table_query)
         connection.commit()
-        print("Table created successfully.")
         cursor.close()
     except psycopg2.Error as e:
-        print(f"Error creating table: {e}")
+        print(f"Error preparing table: {e}")
         raise
+# def create_table(connection):
+#     print("Creating table if not exists.")
+#     try:
+#         cursor = connection.cursor()
+#         create_table_query = """
+#         CREATE SCHEMA IF NOT EXISTS dev;
+#         CREATE TABLE IF NOT EXISTS dev.raw_earthquake_data (
+#             id SERIAL PRIMARY KEY,
+#             magnitude FLOAT,
+#             location TEXT,
+#             time TIMESTAMPTZ
+#         );
+#         """
+#         cursor.execute(create_table_query)
+#         connection.commit()
+#         print("Table created successfully.")
+#         cursor.close()
+#     except psycopg2.Error as e:
+#         print(f"Error creating table: {e}")
+#         raise
+
+# def insert_records(connection, records):
+#     print("Inserting records into the database.")
+#     try:
+#         cursor = connection.cursor()
+#         insert_query = """
+#         INSERT INTO dev.raw_earthquake_data (magnitude, location, time)
+#         VALUES (%s, %s, %s);
+#         """
+#         for record in records:
+#             cursor.execute(insert_query, (record['magnitude'], record['location'], record['time']))
+#             connection.commit()
+#         print("Records inserted successfully.")
+#         cursor.close()
+#     except psycopg2.Error as e:
+#         print(f"Error inserting records: {e}")
+#         raise
 
 def insert_records(connection, records):
-    print("Inserting records into the database.")
     try:
         cursor = connection.cursor()
+        # Use ON CONFLICT to avoid errors if the same ID is ingested twice
         insert_query = """
-        INSERT INTO dev.raw_earthquake_data (magnitude, location, time)
-        VALUES (%s, %s, %s);
+        INSERT INTO dev.raw_earthquake_data (id, magnitude, latitude, longitude, depth, location, time)
+        VALUES (%(id)s, %(magnitude)s, %(latitude)s, %(longitude)s, %(depth)s, %(location)s, %(time)s)
+        ON CONFLICT (id) DO NOTHING;
         """
-        for record in records:
-            cursor.execute(insert_query, (record['magnitude'], record['location'], record['time']))
-            connection.commit()
-        print("Records inserted successfully.")
+        cursor.executemany(insert_query, records)
+        connection.commit()
         cursor.close()
     except psycopg2.Error as e:
-        print(f"Error inserting records: {e}")
+        print(f"Error inserting: {e}")
         raise
 
+# def parse_csv(csv_text):
+#     """
+#     Parses USGS-style CSV:
+#     time,latitude,longitude,depth,mag,...,place,...
+#     """
+#     reader = csv.DictReader(StringIO(csv_text))
+#     records = []
+
+#     for row in reader:
+#         records.append({
+#             "magnitude": float(row["mag"]),
+#             "location": row["place"],
+#             "time": row["time"]
+#         })
+
+#     return records
 def parse_csv(csv_text):
-    """
-    Parses USGS-style CSV:
-    time,latitude,longitude,depth,mag,...,place,...
-    """
     reader = csv.DictReader(StringIO(csv_text))
     records = []
-
     for row in reader:
         records.append({
-            "magnitude": float(row["mag"]),
+            "id": row["id"],
+            "magnitude": float(row["mag"]) if row["mag"] else None,
+            "latitude": float(row["latitude"]) if row["latitude"] else None,
+            "longitude": float(row["longitude"]) if row["longitude"] else None,
+            "depth": float(row["depth"]) if row["depth"] else None,
             "location": row["place"],
             "time": row["time"]
         })
-
     return records
 
 def main():

@@ -20,7 +20,7 @@ default_args = {
 dag = DAG(
     dag_id = "earthquake-api-dbt-orchestrator",
     default_args = default_args,
-    schedule = timedelta(minutes=1)
+    schedule = timedelta(minutes=5)
 )
 
 with dag:
@@ -34,6 +34,12 @@ with dag:
         image='ghcr.io/dbt-labs/dbt-postgres:1.9.latest',
         command='run',
         working_dir='/usr/app',
+        environment={
+            'DATABASE_DB': os.getenv('APP_DB_NAME'),
+            'DATABASE_HOST': 'db',
+            'DATABASE_USER': os.getenv('APP_DB_USER'),
+            'DATABASE_PASSWORD': os.getenv('APP_DB_PASSWORD'),
+        },
         mounts=[
             Mount(source=f"{PROJECT_ROOT}/dbt/my_project", target="/usr/app", type="bind"),
             Mount(source=f"{PROJECT_ROOT}/dbt/profiles.yml", target="/root/.dbt/profiles.yml", type="bind"),
