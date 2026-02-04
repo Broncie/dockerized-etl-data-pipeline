@@ -49,4 +49,24 @@ with dag:
         auto_remove='success'
     )
 
-    task1 >> task2
+    task3 = DockerOperator(
+        task_id='test_data_task',
+        image='ghcr.io/dbt-labs/dbt-postgres:1.9.latest',
+        command='test',
+        working_dir='/usr/app',
+        environment={
+            'DATABASE_DB': os.getenv('APP_DB_NAME'),
+            'DATABASE_HOST': 'db',
+            'DATABASE_USER': os.getenv('APP_DB_USER'),
+            'DATABASE_PASSWORD': os.getenv('APP_DB_PASSWORD'),
+        },
+        mounts=[
+            Mount(source=f"{PROJECT_ROOT}/dbt/my_project", target="/usr/app", type="bind"),
+            Mount(source=f"{PROJECT_ROOT}/dbt/profiles.yml", target="/root/.dbt/profiles.yml", type="bind"),
+        ],
+        network_mode='earthquake-data-project_my-network',
+        docker_url='unix://var/run/docker.sock',
+        auto_remove='success'
+    )
+
+    task1 >> task2 >> task3

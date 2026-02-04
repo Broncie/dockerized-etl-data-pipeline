@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_earthquake_data
+    columns:
+      - name: id
+        tests:
+          - not_null
+          - unique
+
+      - name: occurred_at
+        tests:
+          - not_null
+
+      - name: latitude
+        tests:
+          - not_null
+
+      - name: longitude
+        tests:
+          - not_null
+
+      - name: magnitude
+        tests:
+          - not_null
